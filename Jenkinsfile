@@ -33,34 +33,33 @@ pipeline {
             }
         }
 
+        stage('Docker Login') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-creds',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    bat 'echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin'
+                }
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                bat 'docker tag product-service:1.0 harika894/product-service:1.0'
+                bat 'docker push harika894/product-service:1.0'
+            }
+        }
+
         stage('Run Docker Container') {
             steps {
                 bat '''
-                docker stop product-service
-                docker rm product-service
+                docker rm -f product-service || exit /b 0
                 docker run -d --name product-service -p 8082:8082 product-service:1.0
                 '''
             }
         }
-
-        stage('Docker Login') {
-    steps {
-        withCredentials([usernamePassword(
-            credentialsId: 'dockerhub-creds',
-            usernameVariable: 'DOCKER_USER',
-            passwordVariable: 'DOCKER_PASS'
-        )]) {
-            bat 'echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin'
-        }
-    }
-}
-
-stage('Push Docker Image') {
-    steps {
-        bat 'docker tag product-service:1.0 harika894/product-service:1.0'
-        bat 'docker push harika894/product-service:1.0'
-    }
-}
     }
 
     post {
